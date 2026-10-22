@@ -155,7 +155,9 @@ async function run() {
           {
             tag_name: `v${newVersion}`,
             name: `Dark Oak v${newVersion}`,
-            body: `Release Dark Oak v${newVersion}\n\nAutomated build installer.`,
+            body: `0.0.0!!!!!
+            First version EVER
+            I hope you like it :3`,
             draft: false,
             prerelease: false
           },
