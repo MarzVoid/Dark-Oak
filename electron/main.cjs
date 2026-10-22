@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain, dialog } = require('electron')
 const path = require('path')
 const fs = require('fs')
 const { initUpdater } = require('@marzipan/updater/main')
+const { loadDataFromDb, saveDataToDb } = require('./db.cjs')
 
 const pkg = require('../package.json')
 
@@ -33,6 +34,18 @@ function saveConfig(cfg) {
   } catch (e) {
     return false
   }
+}
+
+function getRecipesDbPath() {
+  const cfg = getConfig()
+  let dir = cfg.recipesDir
+  if (!dir) {
+    dir = path.join(app.getPath('documents'), 'Dark Oak')
+  }
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true })
+  }
+  return path.join(dir, 'dark-oak-recipes.db')
 }
 
 function getRecipesFilePath() {
@@ -95,12 +108,10 @@ function createWindow() {
 
 ipcMain.handle('storage:load', async () => {
   try {
-    const filePath = getRecipesFilePath()
-    if (fs.existsSync(filePath)) {
-      const data = fs.readFileSync(filePath, 'utf-8')
-      return JSON.parse(data)
-    }
-    return null
+    const dbPath = getRecipesDbPath()
+    const jsonPath = getRecipesFilePath()
+    const data = await loadDataFromDb(dbPath, jsonPath)
+    return data
   } catch (err) {
     return null
   }
@@ -108,9 +119,46 @@ ipcMain.handle('storage:load', async () => {
 
 ipcMain.handle('storage:save', async (_, data) => {
   try {
-    const filePath = getRecipesFilePath()
-    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8')
-    return { success: true }
+    const dbPath = getRecipesDbPath()
+    const jsonPath = getRecipesFilePath()
+    return await saveDataToDb(dbPath, data, jsonPath)
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+})
+
+async function translateTextOnline(text, targetLang) {
+  if (!text || typeof text !== 'string' || !text.trim()) return text
+  const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${encodeURIComponent(targetLang)}&dt=t&q=${encodeURIComponent(text)}`
+  const res = await fetch(url)
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  const json = await res.json()
+  if (Array.isArray(json) && Array.isArray(json[0])) {
+    return json[0].map(item => item[0]).join('')
+  }
+  return text
+}
+
+ipcMain.handle('translate:text', async (_, { text, targetLang }) => {
+  try {
+    const translated = await translateTextOnline(text, targetLang)
+    return { success: true, text: translated }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+})
+
+ipcMain.handle('translate:batch', async (_, { texts, targetLang }) => {
+  try {
+    const promises = (texts || []).map(async t => {
+      try {
+        return await translateTextOnline(t, targetLang)
+      } catch (e) {
+        return t
+      }
+    })
+    const results = await Promise.all(promises)
+    return { success: true, results }
   } catch (err) {
     return { success: false, error: err.message }
   }
@@ -168,6 +216,14 @@ ipcMain.handle('settings:setRecipesDir', async (_, newDir) => {
     if (fs.existsSync(currentFilePath) && !fs.existsSync(newFilePath)) {
       try {
         fs.copyFileSync(currentFilePath, newFilePath)
+      } catch (e) {
+      }
+    }
+    const currentDbPath = getRecipesDbPath()
+    const newDbPath = path.join(newDir, 'dark-oak-recipes.db')
+    if (fs.existsSync(currentDbPath) && !fs.existsSync(newDbPath)) {
+      try {
+        fs.copyFileSync(currentDbPath, newDbPath)
       } catch (e) {
       }
     }

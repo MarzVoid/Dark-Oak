@@ -7,11 +7,16 @@ import RecipeEditorView from './components/RecipeEditorView'
 import AddCategoryModal from './components/AddCategoryModal'
 import SetupModal from './components/SetupModal'
 import { initialRecipes } from './data/initialRecipes'
-import { Plus, Utensils, Globe, Folder, FolderOpen, Check, Sparkles } from 'lucide-react'
-import { UpdateCard } from '@marzipan/updater/react'
-import '@marzipan/updater/react/style.css'
+import { Plus, Utensils } from 'lucide-react'
+import SettingsUpdaterCard from './components/SettingsUpdaterCard'
 import igolochkaBranch from './assets/igolochka.png'
 import { useI18n } from './i18n/I18nContext'
+import {
+  getLocalizedRecipe,
+  translateRecipe,
+  hasCyrillic,
+  translateCategory
+} from './utils/recipeTranslator'
 
 export default function App() {
   const { t, language, setLanguage } = useI18n()
@@ -26,9 +31,7 @@ export default function App() {
   const [loaded, setLoaded] = useState(false)
   const [appVersion, setAppVersion] = useState('')
   const [recipesDir, setRecipesDir] = useState('')
-  const [showSetupModal, setShowSetupModal] = useState(() => {
-    return !localStorage.getItem('dark_oak_setup_done')
-  })
+  const [showSetupModal, setShowSetupModal] = useState(true)
 
   useEffect(() => {
     if (window.updater && window.updater.getVersion) {
@@ -103,6 +106,47 @@ export default function App() {
     }
   }, [recipes, categories, loaded])
 
+  useEffect(() => {
+    if (!loaded || !recipes.length) return
+
+    let isMounted = true
+    const untranslated = recipes.filter(r => {
+      const isRu = hasCyrillic(r.title || r.description || '')
+      if (language === 'ru' && !isRu) {
+        return !r.translations || !r.translations.ru
+      }
+      if (language === 'en' && isRu) {
+        return !r.translations || !r.translations.en
+      }
+      return false
+    })
+
+    if (untranslated.length === 0) return
+
+    async function runAutoTranslate() {
+      try {
+        const updatedList = await Promise.all(
+          untranslated.map(r => translateRecipe(r, language))
+        )
+        if (!isMounted) return
+
+        setRecipes(prev => {
+          const updateMap = {}
+          updatedList.forEach(u => {
+            if (u && u.id) updateMap[u.id] = u
+          })
+          return prev.map(r => updateMap[r.id] || r)
+        })
+      } catch (e) {}
+    }
+
+    runAutoTranslate()
+
+    return () => {
+      isMounted = false
+    }
+  }, [language, recipes, loaded])
+
   const handleToggleFavorite = (id) => {
     setRecipes(prev => prev.map(r => {
       if (r.id === id) {
@@ -123,11 +167,11 @@ export default function App() {
 
   const handleSaveRecipe = (recipeData) => {
     setRecipes(prev => {
-      const exists = prev.some(r => r.id === recipeData.id)
+      const exists = prev.find(r => r.id === recipeData.id)
       if (exists) {
-        return prev.map(r => (r.id === recipeData.id ? recipeData : r))
+        return prev.map(r => (r.id === recipeData.id ? { ...exists, ...recipeData, translations: {} } : r))
       }
-      return [recipeData, ...prev]
+      return [{ ...recipeData, translations: {} }, ...prev]
     })
 
     if (recipeData.category && !categories.includes(recipeData.category)) {
@@ -182,20 +226,33 @@ export default function App() {
     }
   }
 
-  let filteredRecipes = recipes
+  const localizedRecipes = recipes.map(r => getLocalizedRecipe(r, language))
+
+  let filteredRecipes = localizedRecipes
   if (currentFilter === 'favorites') {
     filteredRecipes = filteredRecipes.filter(r => r.isFavorite)
   } else if (currentFilter.startsWith('cat:')) {
     const catName = currentFilter.replace('cat:', '')
-    filteredRecipes = filteredRecipes.filter(r => r.category === catName)
+    filteredRecipes = filteredRecipes.filter((r, idx) => {
+      const orig = recipes[idx] || r
+      return (
+        r.category === catName ||
+        orig.category === catName ||
+        translateCategory(orig.category, language) === catName ||
+        translateCategory(catName, language) === r.category
+      )
+    })
   }
 
   if (searchQuery.trim()) {
     const q = searchQuery.toLowerCase().trim()
-    filteredRecipes = filteredRecipes.filter(r => {
-      const titleMatch = r.title.toLowerCase().includes(q)
-      const descMatch = (r.description || '').toLowerCase().includes(q)
-      const ingredientMatch = r.ingredients && r.ingredients.some(i => i.name.toLowerCase().includes(q))
+    filteredRecipes = filteredRecipes.filter((r, idx) => {
+      const orig = recipes[idx] || r
+      const titleMatch = r.title.toLowerCase().includes(q) || orig.title.toLowerCase().includes(q)
+      const descMatch = (r.description || '').toLowerCase().includes(q) || (orig.description || '').toLowerCase().includes(q)
+      const ingredientMatch =
+        (r.ingredients && r.ingredients.some(i => (i.name || '').toLowerCase().includes(q))) ||
+        (orig.ingredients && orig.ingredients.some(i => (i.name || '').toLowerCase().includes(q)))
       return titleMatch || descMatch || ingredientMatch
     })
   }
@@ -204,7 +261,10 @@ export default function App() {
     if (currentFilter === 'all') return t('topbar.allTitle')
     if (currentFilter === 'favorites') return t('topbar.favTitle')
     if (currentFilter === 'settings') return t('topbar.settingsTitle')
-    if (currentFilter.startsWith('cat:')) return currentFilter.replace('cat:', '')
+    if (currentFilter.startsWith('cat:')) {
+      const cat = currentFilter.replace('cat:', '')
+      return translateCategory(cat, language) || cat
+    }
     return t('app.title')
   }
 
@@ -215,6 +275,10 @@ export default function App() {
     setCurrentFilter(filter)
   }
 
+  const activeSelectedRecipe = selectedRecipe
+    ? getLocalizedRecipe(recipes.find(r => r.id === selectedRecipe.id) || selectedRecipe, language)
+    : null
+
   return (
     <div className="app-container">
       <Sidebar
@@ -224,6 +288,7 @@ export default function App() {
         categories={categories}
         onAddCategory={() => setIsAddingCategory(true)}
         onDeleteCategory={handleDeleteCategory}
+        onOpenSetup={() => setShowSetupModal(true)}
       />
 
       <main className="main-layout">
@@ -241,12 +306,13 @@ export default function App() {
               setEditingRecipe(null)
             }}
           />
-        ) : selectedRecipe ? (
+        ) : activeSelectedRecipe ? (
           <RecipeView
-            recipe={selectedRecipe}
+            recipe={activeSelectedRecipe}
             onBack={() => setSelectedRecipe(null)}
             onEdit={(r) => {
-              setEditingRecipe(r)
+              const orig = recipes.find(item => item.id === r.id) || r
+              setEditingRecipe(orig)
               setSelectedRecipe(null)
             }}
             onDelete={handleDeleteRecipe}
@@ -269,53 +335,52 @@ export default function App() {
                 <div style={{
                   display: 'flex',
                   flexDirection: 'row',
-                  gap: '20px',
+                  gap: '16px',
                   alignItems: 'flex-start',
                   flexWrap: 'wrap',
-                  paddingTop: '60px',
-                  maxWidth: '1000px'
+                  paddingTop: '64px',
+                  paddingLeft: '12px'
                 }}>
+                  <SettingsUpdaterCard />
+
                   <div style={{
                     background: 'var(--bg-card)',
                     border: '1px solid var(--border-subtle)',
                     borderRadius: 'var(--radius-lg)',
-                    padding: '20px 24px',
+                    padding: '18px 20px',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '14px',
-                    flex: '1',
-                    minWidth: '300px'
+                    width: '360px',
+                    height: '185px',
+                    boxSizing: 'border-box',
+                    flexShrink: 0
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <Globe size={20} color="var(--oak-300)" />
-                      <h3 style={{ fontSize: '1.15rem', color: 'var(--text-main)', fontWeight: 700, margin: 0 }}>
-                        {t('settings.languageTitle')}
-                      </h3>
-                    </div>
-                    <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', margin: 0 }}>
+                    <h3 style={{ fontSize: '1.15rem', color: 'var(--text-main)', fontWeight: 700, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {t('settings.languageTitle')}
+                    </h3>
+                    <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', margin: '4px 0 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {t('settings.languageDesc')}
                     </p>
 
-                    <div style={{ display: 'flex', gap: '10px' }}>
+                    <div style={{ display: 'flex', gap: '10px', marginTop: 'auto' }}>
                       <button
                         type="button"
                         onClick={() => setLanguage('ru')}
                         style={{
                           flex: 1,
-                          padding: '10px 14px',
+                          height: '38px',
                           borderRadius: 'var(--radius-md)',
                           background: language === 'ru' ? 'rgba(212, 155, 101, 0.2)' : 'var(--bg-surface)',
                           border: language === 'ru' ? '1.5px solid var(--oak-400)' : '1px solid var(--border-subtle)',
                           color: '#ffffff',
                           display: 'flex',
                           alignItems: 'center',
-                          justifyContent: 'space-between',
+                          justifyContent: 'center',
                           cursor: 'pointer',
                           fontWeight: 700
                         }}
                       >
-                        <span>Русский</span>
-                        {language === 'ru' && <Check size={16} color="var(--oak-300)" />}
+                        Русский
                       </button>
 
                       <button
@@ -323,76 +388,19 @@ export default function App() {
                         onClick={() => setLanguage('en')}
                         style={{
                           flex: 1,
-                          padding: '10px 14px',
+                          height: '38px',
                           borderRadius: 'var(--radius-md)',
                           background: language === 'en' ? 'rgba(212, 155, 101, 0.2)' : 'var(--bg-surface)',
                           border: language === 'en' ? '1.5px solid var(--oak-400)' : '1px solid var(--border-subtle)',
                           color: '#ffffff',
                           display: 'flex',
                           alignItems: 'center',
-                          justifyContent: 'space-between',
+                          justifyContent: 'center',
                           cursor: 'pointer',
                           fontWeight: 700
                         }}
                       >
-                        <span>English</span>
-                        {language === 'en' && <Check size={16} color="var(--oak-300)" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div style={{
-                    background: 'var(--bg-card)',
-                    border: '1px solid var(--border-subtle)',
-                    borderRadius: 'var(--radius-lg)',
-                    padding: '20px 24px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '14px',
-                    flex: '1.2',
-                    minWidth: '320px'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <Folder size={20} color="var(--oak-300)" />
-                      <h3 style={{ fontSize: '1.15rem', color: 'var(--text-main)', fontWeight: 700, margin: 0 }}>
-                        {t('settings.directoryTitle')}
-                      </h3>
-                    </div>
-                    <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', margin: 0 }}>
-                      {t('settings.directoryDesc')}
-                    </p>
-
-                    <div style={{
-                      background: 'var(--bg-surface)',
-                      border: '1px solid var(--border-subtle)',
-                      borderRadius: 'var(--radius-md)',
-                      padding: '10px 14px',
-                      fontSize: '0.82rem',
-                      color: 'var(--text-secondary)',
-                      wordBreak: 'break-all'
-                    }}>
-                      {recipesDir || 'По умолчанию (Документы / Dark Oak)'}
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                      <button
-                        type="button"
-                        className="btn-primary"
-                        onClick={handleSelectDirectory}
-                        style={{ flex: 1, justifyContent: 'center' }}
-                      >
-                        <FolderOpen size={16} />
-                        <span>{t('settings.changeDirBtn')}</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        className="btn-secondary"
-                        onClick={() => setShowSetupModal(true)}
-                        style={{ padding: '0 16px', display: 'flex', alignItems: 'center', gap: '6px' }}
-                      >
-                        <Sparkles size={15} color="var(--oak-400)" />
-                        <span>{t('settings.openSetupBtn')}</span>
+                        English
                       </button>
                     </div>
                   </div>
@@ -404,24 +412,38 @@ export default function App() {
                     padding: '18px 20px',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '6px',
-                    flex: '1',
-                    minWidth: '280px',
-                    maxWidth: '380px'
+                    width: '360px',
+                    height: '185px',
+                    boxSizing: 'border-box',
+                    flexShrink: 0
                   }}>
-                    <h3 style={{ fontSize: '1.15rem', color: 'var(--text-main)', fontWeight: 700, margin: 0 }}>
-                      {t('settings.aboutTitle')}
+                    <h3 style={{ fontSize: '1.15rem', color: 'var(--text-main)', fontWeight: 700, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {t('settings.directoryTitle')}
                     </h3>
-                    <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', margin: 0 }}>
-                      Dark Oak Desktop {appVersion ? `v${appVersion}` : ''}
+                    <p style={{
+                      fontSize: '0.84rem',
+                      color: 'var(--text-muted)',
+                      margin: '4px 0 0 0',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {recipesDir || (language === 'ru' ? 'По умолчанию (Документы / Dark Oak)' : 'Default (Documents / Dark Oak)')}
                     </p>
-                    <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: 0 }}>
-                      {t('settings.savedRecipesCount')} {recipes.length} · {t('settings.categoriesCount')} {categories.length}
-                    </p>
-                  </div>
 
-                  <div style={{ flex: '1.2', minWidth: '320px', maxWidth: '500px' }}>
-                    <UpdateCard title="Обновление Dark Oak" description="Автоматическая проверка и загрузка новых релизов" />
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      onClick={handleSelectDirectory}
+                      style={{
+                        marginTop: 'auto',
+                        height: '38px',
+                        width: '100%',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      {t('settings.changeDirBtn')}
+                    </button>
                   </div>
                 </div>
               ) : filteredRecipes.length > 0 ? (
@@ -430,7 +452,10 @@ export default function App() {
                     <RecipeCard
                       key={recipe.id}
                       recipe={recipe}
-                      onSelect={(r) => setSelectedRecipe(r)}
+                      onSelect={(r) => {
+                        const orig = recipes.find(item => item.id === r.id) || r
+                        setSelectedRecipe(orig)
+                      }}
                       onToggleFavorite={handleToggleFavorite}
                     />
                   ))}
@@ -438,14 +463,11 @@ export default function App() {
               ) : (
                 <div className="empty-state">
                   <div className="empty-icon-wrap">
-                    <Utensils size={32} />
+                    <Utensils size={30} />
                   </div>
-                  <h3 className="empty-title">{t('empty.title')}</h3>
-                  <p className="empty-desc">
-                    {searchQuery
-                      ? t('empty.searchDesc')
-                      : t('empty.emptyDesc')}
-                  </p>
+                  <h3 className="empty-title">
+                    {searchQuery ? t('empty.searchTitle') : t('empty.title')}
+                  </h3>
                   <button className="btn-primary" onClick={() => setIsCreating(true)}>
                     <Plus size={16} />
                     <span>{t('empty.createBtn')}</span>

@@ -15,28 +15,44 @@ export function I18nProvider({ children }) {
     }
   }
 
-  const t = (path) => {
+  const t = (path, params) => {
     if (!path) return ''
     const keys = path.split('.')
     let current = translations[language] || translations.ru
 
+    let found = true
     for (const key of keys) {
       if (current && typeof current === 'object' && key in current) {
         current = current[key]
       } else {
-        let fallback = translations.ru
-        for (const fbKey of keys) {
-          if (fallback && typeof fallback === 'object' && fbKey in fallback) {
-            fallback = fallback[fbKey]
-          } else {
-            return path
-          }
-        }
-        return fallback
+        found = false
+        break
       }
     }
 
-    return typeof current === 'string' ? current : path
+    if (!found) {
+      let fallback = translations.ru
+      for (const fbKey of keys) {
+        if (fallback && typeof fallback === 'object' && fbKey in fallback) {
+          fallback = fallback[fbKey]
+        } else {
+          return path
+        }
+      }
+      current = fallback
+    }
+
+    if (typeof current === 'string') {
+      if (params && typeof params === 'object') {
+        return Object.entries(params).reduce(
+          (acc, [k, v]) => acc.replace(new RegExp(`\\{${k}\\}`, 'g'), v),
+          current
+        )
+      }
+      return current
+    }
+
+    return path
   }
 
   return (

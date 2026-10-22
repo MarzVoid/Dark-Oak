@@ -33,11 +33,11 @@ export default function RecipeEditorView({
   onSave,
   onCancel
 }) {
-  const { t } = useI18n()
+  const { t, language } = useI18n()
   const isEditing = !!recipe
 
   const [title, setTitle] = useState(recipe?.title || '')
-  const [category, setCategory] = useState(recipe?.category || categories[0] || 'Десерты')
+  const [category, setCategory] = useState(recipe?.category || categories[0] || t('editor.defaultCategory'))
   const [prepTime, setPrepTime] = useState(recipe?.prepTime ?? 15)
   const [cookTime, setCookTime] = useState(recipe?.cookTime ?? 20)
   const [servings, setServings] = useState(recipe?.servings ?? 4)
@@ -119,9 +119,9 @@ export default function RecipeEditorView({
     return [{ text: '', icon: '' }]
   })
 
-  const availableCustomIcons = getAvailableCustomIcons()
-  const allRecipeIcons = getAllRecipeIcons()
-  const actionIconsList = getActionIconsList()
+  const availableCustomIcons = getAvailableCustomIcons(language)
+  const allRecipeIcons = getAllRecipeIcons(language)
+  const actionIconsList = getActionIconsList(language)
   const [activeIngEditor, setActiveIngEditor] = useState(null)
 
   const handleOpenAddIngredient = (targetSection = '') => {
@@ -129,7 +129,7 @@ export default function RecipeEditorView({
       index: null,
       name: '',
       amount: '1',
-      unit: 'шт',
+      unit: t('editor.unitPcs'),
       icon: '',
       section: targetSection || (sections[0] || '')
     })
@@ -154,7 +154,7 @@ export default function RecipeEditorView({
     const itemData = {
       name: activeIngEditor.name.trim(),
       amount: activeIngEditor.amount.trim() || '1',
-      unit: activeIngEditor.unit.trim() || 'шт'
+      unit: activeIngEditor.unit.trim() || t('editor.unitPcs')
     }
     if (activeIngEditor.icon) {
       itemData.icon = activeIngEditor.icon
@@ -250,7 +250,7 @@ export default function RecipeEditorView({
   const handleSubmit = (e) => {
     e.preventDefault()
     if (!title.trim()) {
-      alert('Укажи название рецепта')
+      alert(t('editor.alertNoTitle'))
       return
     }
 
@@ -267,7 +267,7 @@ export default function RecipeEditorView({
       id: recipe?.id || `recipe-${Date.now()}`,
       title: title.trim(),
       icon: recipeIcon || detectRecipeIcon(title.trim(), category.trim()),
-      category: category.trim() || 'Без категории',
+      category: category.trim() || t('editor.uncategorized'),
       prepTime: Number(prepTime) || 0,
       cookTime: Number(cookTime) || 0,
       servings: Number(servings) || 1,
@@ -315,18 +315,18 @@ export default function RecipeEditorView({
             <div className="recipe-editor-card recipe-editor-card-main">
               <div className="recipe-card-header">
                 <div className="recipe-card-header-left">
-                  <h3 className="recipe-card-title">Основная информация</h3>
+                  <h3 className="recipe-card-title">{t('editor.mainInfo')}</h3>
                 </div>
               </div>
 
               <div className="recipe-form-group">
-                <label className="recipe-form-label">Название блюда</label>
+                <label className="recipe-form-label">{t('editor.titleLabel')}</label>
                 <div className="recipe-input-with-badge">
                   <button
                     type="button"
                     className="recipe-input-badge recipe-icon-badge-btn"
                     onClick={() => setIsPickingRecipeIcon(true)}
-                    title="Выбрать иконку блюда"
+                    title={t('editor.selectIconTitle')}
                   >
                     <RecipeIconImg
                       icon={recipeIcon || detectRecipeIcon(title, category)}
@@ -337,7 +337,7 @@ export default function RecipeEditorView({
                     <input
                       type="text"
                       className="recipe-input-field"
-                      placeholder="Например, Вишнёвый пирог..."
+                      placeholder={t('editor.titlePlaceholder')}
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
                       required
@@ -347,7 +347,7 @@ export default function RecipeEditorView({
               </div>
 
               <div className="recipe-form-group">
-                <label className="recipe-form-label">Категория</label>
+                <label className="recipe-form-label">{t('editor.categoryLabel')}</label>
                 <select
                   className="recipe-select-field"
                   value={category}
@@ -360,7 +360,7 @@ export default function RecipeEditorView({
               </div>
 
               <div className="recipe-rating-row">
-                <label className="recipe-form-label" style={{ margin: 0 }}>Рейтинг</label>
+                <label className="recipe-form-label" style={{ margin: 0 }}>{t('editor.ratingLabel')}</label>
                 <div className="recipe-stars-container">
                   {[1, 2, 3, 4, 5].map(star => (
                     <button
@@ -381,7 +381,7 @@ export default function RecipeEditorView({
 
               <div className="recipe-stats-grid">
                 <div className="recipe-form-group" style={{ margin: 0 }}>
-                  <label className="recipe-form-label">Подготовка (мин)</label>
+                  <label className="recipe-form-label">{t('editor.prepTimeLabel')}</label>
                   <div className="recipe-input-box">
                     <input
                       type="number"
@@ -394,7 +394,7 @@ export default function RecipeEditorView({
                 </div>
 
                 <div className="recipe-form-group" style={{ margin: 0 }}>
-                  <label className="recipe-form-label">Готовка (мин)</label>
+                  <label className="recipe-form-label">{t('editor.cookTimeLabel')}</label>
                   <div className="recipe-input-box">
                     <input
                       type="number"
@@ -407,7 +407,7 @@ export default function RecipeEditorView({
                 </div>
 
                 <div className="recipe-form-group" style={{ margin: 0 }}>
-                  <label className="recipe-form-label">Порций</label>
+                  <label className="recipe-form-label">{t('editor.servingsLabel')}</label>
                   <div className="recipe-input-box">
                     <input
                       type="number"
@@ -422,7 +422,7 @@ export default function RecipeEditorView({
 
               <div className="recipe-form-group">
                 <label className="recipe-form-label">
-                  {photoMode === 'url' ? 'Ссылка на фото' : 'Файл фото'}
+                  {photoMode === 'url' ? t('editor.photoUrlLabel') : t('editor.photoFileLabel')}
                 </label>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                   {photoMode === 'url' ? (
@@ -454,7 +454,7 @@ export default function RecipeEditorView({
                         }}
                       >
                         {image
-                          ? (image.startsWith('data:') ? 'Файл выбран' : image)
+                          ? (image.startsWith('data:') ? t('editor.fileSelected') : image)
                           : '...'}
                       </span>
                       <input
@@ -470,7 +470,7 @@ export default function RecipeEditorView({
                     type="button"
                     className="recipe-photo-mode-btn"
                     onClick={() => setPhotoMode(prev => prev === 'url' ? 'file' : 'url')}
-                    title={photoMode === 'url' ? 'Выбрать файл с компьютера' : 'Ввести ссылку на фото'}
+                    title={photoMode === 'url' ? t('editor.chooseFileTitle') : t('editor.enterUrlTitle')}
                   >
                     {photoMode === 'url' ? <FolderOpen size={16} /> : <LinkIcon size={16} />}
                   </button>
@@ -478,11 +478,11 @@ export default function RecipeEditorView({
               </div>
 
               <div className="recipe-form-group" style={{ margin: 0 }}>
-                <label className="recipe-form-label">Описание</label>
+                <label className="recipe-form-label">{t('editor.descLabel')}</label>
                 <textarea
                   className="recipe-textarea-field"
                   rows={3}
-                  placeholder="..."
+                  placeholder={t('editor.descPlaceholder')}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                 />
@@ -492,17 +492,17 @@ export default function RecipeEditorView({
             <div className="recipe-editor-card recipe-editor-card-ingredients">
               <div className="recipe-card-header">
                 <div className="recipe-card-header-left">
-                  <h3 className="recipe-card-title">Ингредиенты</h3>
+                  <h3 className="recipe-card-title">{t('editor.ingredientsTitle')}</h3>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <button
                     type="button"
                     className="recipe-ref-btn-add"
                     onClick={() => setIsAddingSection(true)}
-                    title="Создать раздел (например: Тесто, Начинка)"
+                    title={t('editor.createSectionTitle')}
                   >
                     <FolderPlus size={14} />
-                    <span>Раздел</span>
+                    <span>{t('editor.addSectionBtn')}</span>
                   </button>
                   <button
                     type="button"
@@ -510,7 +510,7 @@ export default function RecipeEditorView({
                     onClick={() => handleOpenAddIngredient()}
                   >
                     <Plus size={14} />
-                    <span>Добавить</span>
+                    <span>{t('editor.addIngredientBtn')}</span>
                   </button>
                 </div>
               </div>
@@ -520,7 +520,7 @@ export default function RecipeEditorView({
                   <input
                     type="text"
                     className="recipe-popover-input"
-                    placeholder="Название раздела (Тесто, Начинка...)"
+                    placeholder={t('editor.sectionPlaceholder')}
                     value={newSectionName}
                     onChange={(e) => setNewSectionName(e.target.value)}
                     onKeyDown={(e) => {
@@ -541,7 +541,7 @@ export default function RecipeEditorView({
                     className="recipe-ref-btn-add"
                     onClick={handleAddSection}
                   >
-                    Добавить
+                    {t('editor.addIngredientBtn')}
                   </button>
                   <button
                     type="button"
@@ -557,7 +557,7 @@ export default function RecipeEditorView({
                       setNewSectionName('')
                     }}
                   >
-                    Отмена
+                    {t('editor.cancelBtn')}
                   </button>
                 </div>
               )}
@@ -574,7 +574,7 @@ export default function RecipeEditorView({
                       <IngredientIcon name={ing.name} icon={ing.icon} />
                       <span className="recipe-slot-name">{ing.name || '...'}</span>
                       <span className="recipe-slot-count">
-                        {ing.unit === 'шт' ? `×${ing.amount}` : (ing.unit ? `${ing.amount} ${ing.unit}` : ing.amount)}
+                        {ing.unit === 'шт' || ing.unit === 'pcs' ? `×${ing.amount}` : (ing.unit ? `${ing.amount} ${ing.unit}` : ing.amount)}
                       </span>
                       <button
                         type="button"
@@ -583,7 +583,7 @@ export default function RecipeEditorView({
                           e.stopPropagation()
                           handleRemoveIngredient(idx)
                         }}
-                        title="Удалить"
+                        title={t('editor.delete')}
                       >
                         <Trash2 size={10} />
                       </button>
@@ -612,13 +612,13 @@ export default function RecipeEditorView({
                               onClick={() => handleOpenAddIngredient(sectionName)}
                             >
                               <Plus size={12} />
-                              <span>Добавить</span>
+                              <span>{t('editor.addIngredientBtn')}</span>
                             </button>
                             <button
                               type="button"
                               className="recipe-section-delete-btn"
                               onClick={() => handleRemoveSection(sectionName)}
-                              title="Удалить раздел"
+                              title={t('editor.deleteSection')}
                             >
                               <X size={13} />
                             </button>
@@ -636,7 +636,7 @@ export default function RecipeEditorView({
                               <IngredientIcon name={ing.name} icon={ing.icon} />
                               <span className="recipe-slot-name">{ing.name || '...'}</span>
                               <span className="recipe-slot-count">
-                                {ing.unit === 'шт' ? `×${ing.amount}` : (ing.unit ? `${ing.amount} ${ing.unit}` : ing.amount)}
+                                {ing.unit === 'шт' || ing.unit === 'pcs' ? `×${ing.amount}` : (ing.unit ? `${ing.amount} ${ing.unit}` : ing.amount)}
                               </span>
                               <button
                                 type="button"
@@ -645,7 +645,7 @@ export default function RecipeEditorView({
                                   e.stopPropagation()
                                   handleRemoveIngredient(idx)
                                 }}
-                                title="Удалить"
+                                title={t('editor.delete')}
                               >
                                 <Trash2 size={10} />
                               </button>
@@ -656,7 +656,7 @@ export default function RecipeEditorView({
                               className="recipe-slot recipe-slot-empty"
                               onClick={() => handleOpenAddIngredient(sectionName)}
                               style={{ cursor: 'pointer', borderStyle: 'dashed' }}
-                              title="Добавить ингредиент"
+                              title={t('editor.addIngredient')}
                             >
                               <Plus size={16} />
                             </div>
@@ -677,7 +677,7 @@ export default function RecipeEditorView({
                       <div className="recipe-section-block">
                         <div className="recipe-section-block-header">
                           <span className="recipe-section-block-title" style={{ color: '#a8927d' }}>
-                            Другое / Без раздела
+                            {t('editor.otherSection')}
                           </span>
                         </div>
                         <div className="recipe-ingredients-grid">
@@ -691,7 +691,7 @@ export default function RecipeEditorView({
                               <IngredientIcon name={ing.name} icon={ing.icon} />
                               <span className="recipe-slot-name">{ing.name || '...'}</span>
                               <span className="recipe-slot-count">
-                                {ing.unit === 'шт' ? `×${ing.amount}` : (ing.unit ? `${ing.amount} ${ing.unit}` : ing.amount)}
+                                {ing.unit === 'шт' || ing.unit === 'pcs' ? `×${ing.amount}` : (ing.unit ? `${ing.amount} ${ing.unit}` : ing.amount)}
                               </span>
                               <button
                                 type="button"
@@ -700,7 +700,7 @@ export default function RecipeEditorView({
                                   e.stopPropagation()
                                   handleRemoveIngredient(idx)
                                 }}
-                                title="Удалить"
+                                title={t('editor.delete')}
                               >
                                 <Trash2 size={10} />
                               </button>
@@ -718,7 +718,7 @@ export default function RecipeEditorView({
           <div className="recipe-editor-card recipe-editor-card-steps">
             <div className="recipe-card-header">
               <div className="recipe-card-header-left">
-                <h3 className="recipe-card-title">Шаги приготовления</h3>
+                <h3 className="recipe-card-title">{t('editor.stepsTitle')}</h3>
               </div>
               <button
                 type="button"
@@ -726,7 +726,7 @@ export default function RecipeEditorView({
                 onClick={handleAddStep}
               >
                 <Plus size={14} />
-                <span>Добавить шаг</span>
+                <span>{t('editor.addStepBtn')}</span>
               </button>
             </div>
 
@@ -744,7 +744,7 @@ export default function RecipeEditorView({
                     cursor: 'pointer'
                   }}
                 >
-                  Нажми «+ Добавить шаг», чтобы добавить первый шаг
+                  {t('editor.emptySteps')}
                 </div>
               ) : (
                 steps.map((step, idx) => {
@@ -767,7 +767,7 @@ export default function RecipeEditorView({
                         type="button"
                         className="recipe-step-icon-btn"
                         onClick={() => setPickingStepIconIndex(idx)}
-                        title="Выбрать иконку действия для шага"
+                        title={t('editor.stepIconTitle')}
                       >
                         {effectiveIcon ? (
                           <RecipeIconImg icon={effectiveIcon} size={20} />
@@ -780,7 +780,7 @@ export default function RecipeEditorView({
                         className="recipe-step-input"
                         value={stepText}
                         onChange={(e) => handleUpdateStepText(idx, e.target.value)}
-                        placeholder="Опишите шаг приготовления..."
+                        placeholder={t('editor.stepPlaceholder')}
                       />
                       <div
                         className="recipe-step-drag-handle"
@@ -789,7 +789,7 @@ export default function RecipeEditorView({
                         onMouseLeave={() => {
                           if (draggedStepIndex === null) setDraggableIndex(null)
                         }}
-                        title="Перетащить шаг"
+                        title={t('editor.dragStepTitle')}
                       >
                         <GripVertical size={16} />
                       </div>
@@ -797,7 +797,7 @@ export default function RecipeEditorView({
                         type="button"
                         className="recipe-step-delete-btn"
                         onClick={() => handleRemoveStep(idx)}
-                        title="Удалить шаг"
+                        title={t('editor.deleteStepTitle')}
                       >
                         <Trash2 size={16} />
                       </button>
@@ -815,7 +815,7 @@ export default function RecipeEditorView({
           <div className="recipe-ing-popover" onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
               <span style={{ fontWeight: 700, color: '#f5eedc', fontSize: '0.9rem' }}>
-                {activeIngEditor.index !== null ? 'Изменить ингредиент' : 'Новый ингредиент'}
+                {activeIngEditor.index !== null ? t('editor.editIngredient') : t('editor.newIngredient')}
               </span>
               <button
                 type="button"
@@ -902,13 +902,13 @@ export default function RecipeEditorView({
 
             {sections.length > 0 && (
               <div className="recipe-popover-section-row">
-                <span className="recipe-popover-section-label">Раздел:</span>
+                <span className="recipe-popover-section-label">{t('editor.sectionLabel')}</span>
                 <select
                   className="recipe-popover-section-select"
                   value={activeIngEditor.section || ''}
                   onChange={(e) => setActiveIngEditor(prev => ({ ...prev, section: e.target.value }))}
                 >
-                  <option value="">(Без раздела)</option>
+                  <option value="">{t('editor.noSection')}</option>
                   {sections.map(s => (
                     <option key={s} value={s}>{s}</option>
                   ))}
@@ -934,7 +934,7 @@ export default function RecipeEditorView({
                     setActiveIngEditor(null)
                   }}
                 >
-                  Удалить
+                  {t('editor.delete')}
                 </button>
               )}
               <button
@@ -942,7 +942,7 @@ export default function RecipeEditorView({
                 className="recipe-ref-btn-add"
                 onClick={handleSaveActiveIngredient}
               >
-                Готово
+                {t('editor.doneBtn')}
               </button>
             </div>
           </div>
@@ -957,7 +957,7 @@ export default function RecipeEditorView({
           >
             <div className="recipe-card-header">
               <div className="recipe-card-header-left">
-                <h3 className="recipe-card-title">Иконка блюда</h3>
+                <h3 className="recipe-card-title">{t('editor.dishIconTitle')}</h3>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <button
@@ -969,7 +969,7 @@ export default function RecipeEditorView({
                   }}
                   style={{ fontSize: '0.78rem', padding: '4px 8px' }}
                 >
-                  Автовыбор
+                  {t('editor.autoSelect')}
                 </button>
                 <button
                   type="button"
@@ -1009,7 +1009,7 @@ export default function RecipeEditorView({
           >
             <div className="recipe-card-header">
               <div className="recipe-card-header-left">
-                <h3 className="recipe-card-title">Иконка действия (Шаг {pickingStepIconIndex + 1})</h3>
+                <h3 className="recipe-card-title">{t('editor.actionIconStepTitle', { step: pickingStepIconIndex + 1 })}</h3>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <button
@@ -1021,7 +1021,7 @@ export default function RecipeEditorView({
                   }}
                   style={{ fontSize: '0.78rem', padding: '4px 8px' }}
                 >
-                  Автовыбор
+                  {t('editor.autoSelect')}
                 </button>
                 <button
                   type="button"
@@ -1034,7 +1034,7 @@ export default function RecipeEditorView({
             </div>
 
             <div style={{ fontSize: '0.78rem', color: '#a8927d', marginBottom: '8px', fontWeight: 600 }}>
-              Кулинарные действия и посуда
+              {t('editor.actionsAndTools')}
             </div>
             <div className="recipe-icon-picker-grid" style={{ marginBottom: '16px' }}>
               {actionIconsList.map(item => {
@@ -1058,7 +1058,7 @@ export default function RecipeEditorView({
             </div>
 
             <div style={{ fontSize: '0.78rem', color: '#a8927d', marginBottom: '8px', fontWeight: 600 }}>
-              Все иконки
+              {t('editor.allIcons')}
             </div>
             <div className="recipe-icon-picker-grid">
               {allRecipeIcons.map(item => {

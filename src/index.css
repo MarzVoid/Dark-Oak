@@ -656,23 +656,29 @@ button {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 44px 36px;
+  padding: 38px 32px;
   text-align: center;
   gap: 16px;
-  background-color: #0e0e0e;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: var(--bg-card);
+  background-image: linear-gradient(rgba(14, 9, 6, 0.58), rgba(14, 9, 6, 0.58)), url('./assets/dark_oak_planks.png');
+  background-repeat: repeat;
+  background-size: 32px 32px;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xl);
-  max-width: 480px;
+  max-width: 380px;
   margin: 60px auto 0;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--shadow-md);
 }
 
 .empty-icon-wrap {
-  width: 72px;
-  height: 72px;
+  width: 62px;
+  height: 62px;
   border-radius: var(--radius-full);
-  background: #181818;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(14, 9, 6, 0.65);
+  border: 1px solid var(--border-subtle);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -680,16 +686,9 @@ button {
 }
 
 .empty-title {
-  font-size: 1.3rem;
+  font-size: 1.25rem;
   font-weight: 700;
   color: #ffffff;
-}
-
-.empty-desc {
-  font-size: 0.95rem;
-  color: #dcd4cc;
-  line-height: 1.55;
-  max-width: 380px;
 }
 
 .modal-backdrop {
@@ -2086,4 +2085,232 @@ button {
   .recipe-editor-top-row {
     flex-direction: column;
   }
+}
+
+.setup-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  background-color: #140d08;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.setup-canvas {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1000000;
+}
+
+.setup-top-header {
+  position: absolute;
+  top: 48px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  z-index: 5;
+  transition: opacity 0.2s ease;
+}
+
+.setup-brand-title {
+  font-size: 2.2rem;
+  font-weight: 900;
+  color: #f5eedc;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin: 0;
+  text-align: center;
+}
+
+.setup-dots {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+}
+
+.setup-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #2b1b11;
+  display: inline-block;
+  transition: background-color 0.2s ease;
+}
+
+.setup-dot.active {
+  background-color: #d49b65;
+}
+
+.setup-card {
+  width: 420px;
+  max-width: 90%;
+  background-color: transparent;
+  border: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  z-index: 5;
+  transition: opacity 0.2s ease;
+}
+
+.setup-content {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.setup-step-label {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #f5eedc;
+  text-align: center;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.setup-lang-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.setup-lang-btn {
+  width: 100%;
+  padding: 16px 20px;
+  border-radius: 8px;
+  background-color: #1a1009;
+  background-image: linear-gradient(rgba(14, 9, 6, 0.65), rgba(14, 9, 6, 0.65)), url('./assets/dark_oak_planks.png');
+  background-repeat: repeat;
+  background-size: 32px 32px;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  border: 1px solid rgba(212, 155, 101, 0.2);
+  color: #d8c8b8;
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.45);
+  transition: all 0.15s ease;
+}
+
+.setup-lang-btn:hover {
+  background-image: linear-gradient(rgba(14, 9, 6, 0.45), rgba(14, 9, 6, 0.45)), url('./assets/dark_oak_planks.png');
+  border-color: rgba(212, 155, 101, 0.45);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.setup-lang-btn.active {
+  background-image: linear-gradient(rgba(20, 12, 7, 0.25), rgba(20, 12, 7, 0.25)), url('./assets/dark_oak_planks.png');
+  border: 1.5px solid #d49b65;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(212, 155, 101, 0.25);
+}
+
+.setup-continue-btn {
+  margin-top: 16px;
+}
+
+.setup-action-btn {
+  width: 100%;
+  height: 48px;
+  font-size: 1rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #24140b;
+  background-image: linear-gradient(rgba(14, 9, 6, 0.25), rgba(14, 9, 6, 0.25)), url('./assets/dark_oak_log.png');
+  background-repeat: repeat;
+  background-size: 32px 32px;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  border: 1.5px solid #c88a4c;
+  border-radius: 8px;
+  color: #fbf6f0;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  margin: 0;
+  transition: all 0.15s ease;
+}
+
+.setup-action-btn:hover {
+  background-image: linear-gradient(rgba(14, 9, 6, 0.08), rgba(14, 9, 6, 0.08)), url('./assets/dark_oak_log.png');
+  border-color: #f5eedc;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.65);
+}
+
+.setup-action-btn:active {
+  transform: translateY(0);
+}
+
+.setup-actions-row {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.setup-secondary-btn {
+  height: 48px;
+  padding: 0 18px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #160e07;
+  background-image: linear-gradient(rgba(14, 9, 6, 0.7), rgba(14, 9, 6, 0.7)), url('./assets/dark_oak_planks.png');
+  background-repeat: repeat;
+  background-size: 32px 32px;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  border: 1px solid rgba(212, 155, 101, 0.22);
+  border-radius: 8px;
+  color: #cbbba8;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  margin: 0;
+  transition: all 0.15s ease;
+}
+
+.setup-secondary-btn:hover {
+  background-image: linear-gradient(rgba(14, 9, 6, 0.5), rgba(14, 9, 6, 0.5)), url('./assets/dark_oak_planks.png');
+  border-color: rgba(212, 155, 101, 0.45);
+  color: #f5eedc;
+}
+
+.setup-input {
+  width: 100%;
+  height: 46px;
+  font-size: 0.9rem;
+  padding: 0 14px;
+  background-color: #140d07;
+  border: 1px solid rgba(212, 155, 101, 0.22);
+  border-radius: 8px;
+  color: #f5eedc;
+  transition: border-color 0.15s ease;
+}
+
+.setup-input:focus {
+  border-color: #d49b65;
 }

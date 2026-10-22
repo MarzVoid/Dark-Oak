@@ -1,0 +1,45 @@
+{
+  "name": "@marzipan/updater",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Cross-platform auto-updater module for Electron applications supporting GitHub Releases and custom servers",
+  "main": "./dist/main/index.cjs",
+  "module": "./dist/main/index.js",
+  "types": "./dist/main/index.d.ts",
+  "exports": {
+    "./main": {
+      "types": "./dist/main/index.d.ts",
+      "import": "./dist/main/index.js",
+      "require": "./dist/main/index.cjs"
+    },
+    "./preload": {
+      "types": "./dist/preload/index.d.ts",
+      "import": "./dist/preload/index.js",
+      "require": "./dist/preload/index.cjs"
+    },
+    "./react": {
+      "types": "./dist/react/index.d.ts",
+      "import": "./dist/react/index.js"
+    },
+    "./react/style.css": "./dist/react/style.css"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "node build.js"
+  },
+  "peerDependencies": {
+    "electron": ">=20.0.0",
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
+  }
+}

@@ -63,6 +63,58 @@ const ICON_LABELS = {
   wheat_flour: 'Мука'
 }
 
+const ICON_LABELS_EN = {
+  apple: 'Apple',
+  avocado: 'Avocado',
+  bar_of_chocolate: 'Chocolate',
+  beef: 'Beef',
+  black_pepper: 'Black Pepper',
+  blackberry: 'Blackberry',
+  blueberry: 'Blueberry',
+  butter: 'Butter',
+  cabbage_leaf: 'Cabbage Leaf',
+  cabbage: 'Cabbage',
+  candleberry: 'Candleberry',
+  carrot: 'Carrot',
+  cheese: 'Cheese',
+  cherry: 'Cherry',
+  chicken_cuts: 'Chicken Cuts',
+  chicken: 'Chicken',
+  cod: 'Cod',
+  cooked_rice: 'Cooked Rice',
+  cranberry: 'Cranberry',
+  dough: 'Dough',
+  egg: 'Egg',
+  elderberry: 'Elderberry',
+  garlic: 'Garlic',
+  glow_berries: 'Glow Berries',
+  gooseberry: 'Gooseberry',
+  grape: 'Grape',
+  greengrape: 'Green Grape',
+  honey_bottle: 'Honey',
+  huckleberry: 'Huckleberry',
+  juniperberry: 'Juniper Berry',
+  milk_bottle: 'Milk',
+  mulberry: 'Mulberry',
+  mutton: 'Mutton',
+  olive_oil: 'Olive Oil',
+  onion: 'Onion',
+  peach: 'Peach',
+  porkchop: 'Porkchop',
+  potato: 'Potato',
+  rabbit: 'Rabbit',
+  raspberry: 'Raspberry',
+  rice: 'Rice',
+  salmon_slice: 'Salmon Slice',
+  salmon: 'Salmon',
+  salt: 'Salt',
+  strawberry: 'Strawberry',
+  sweet_berries: 'Sweet Berries',
+  toast: 'Bread / Toast',
+  tomato: 'Tomato',
+  wheat_flour: 'Flour'
+}
+
 const ALIASES = {
   egg: ['яйц', 'яичн', 'желт', 'белок', 'egg', 'yolk'],
   butter: ['сливочное масл', 'масло сливочн', 'топленое масл', 'растопленное масл', 'butter'],
@@ -115,11 +167,12 @@ const ALIASES = {
   wheat_flour: ['мук', 'пшениц', 'зерн', 'flour', 'wheat']
 }
 
-export function getAvailableCustomIcons() {
+export function getAvailableCustomIcons(lang = 'ru') {
+  const labels = lang === 'en' ? ICON_LABELS_EN : ICON_LABELS
   return Object.entries(customImageMap).map(([key, src]) => ({
     key,
     src,
-    name: ICON_LABELS[key] || key
+    name: labels[key] || ICON_LABELS[key] || key
   }))
 }
 

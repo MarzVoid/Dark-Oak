@@ -9,6 +9,8 @@ export default function SetupModal({ onComplete, initialDir }) {
   const [isDissolving, setIsDissolving] = useState(false)
 
   const canvasRef = useRef(null)
+  const overlayRef = useRef(null)
+  const headerRef = useRef(null)
   const cardRef = useRef(null)
 
   useEffect(() => {
@@ -40,67 +42,102 @@ export default function SetupModal({ onComplete, initialDir }) {
 
   const startTelegramPixelDissolve = () => {
     const canvas = canvasRef.current
+    const header = headerRef.current
     const card = cardRef.current
-    if (!canvas || !card) {
+    if (!canvas) {
       finalizeSetup()
       return
     }
 
     setIsDissolving(true)
 
-    const rect = card.getBoundingClientRect()
-    canvas.width = window.innerWidth
-    canvas.height = window.innerHeight
+    const width = window.innerWidth
+    const height = window.innerHeight
+    canvas.width = width
+    canvas.height = height
     const ctx = canvas.getContext('2d')
 
-    const particles = []
-    const palette = ['#d49b65', '#e6bd93', '#8c5a2b', '#24170d', '#f5eedc', '#3a2414', '#1b120a']
-    const stepSize = 6
+    const headerRect = header ? header.getBoundingClientRect() : null
+    const cardRect = card ? card.getBoundingClientRect() : null
 
-    for (let x = rect.left; x < rect.right; x += stepSize) {
-      for (let y = rect.top; y < rect.bottom; y += stepSize) {
-        if (Math.random() > 0.15) {
+    const bgPalette = ['#140d08', '#140d08', '#1a110a', '#22150c', '#2c190e', '#382012']
+    const headerPalette = ['#f5eedc', '#debfa3', '#d49b65', '#c88a4c', '#ffffff']
+    const cardPalette = ['#c88a4c', '#d49b65', '#f5eedc', '#debfa3', '#8c5a2b', '#24140b', '#3a2414']
+
+    const particles = []
+    const stepSize = 5
+
+    for (let x = 0; x < width; x += stepSize) {
+      for (let y = 0; y < height; y += stepSize) {
+        const isHeader = headerRect && x >= headerRect.left && x <= headerRect.right && y >= headerRect.top && y <= headerRect.bottom
+        const isCard = cardRect && x >= cardRect.left && x <= cardRect.right && y >= cardRect.top && y <= cardRect.bottom
+
+        let color = null
+        if (isHeader) {
+          if (Math.random() > 0.16) {
+            color = headerPalette[Math.floor(Math.random() * headerPalette.length)]
+          }
+        } else if (isCard) {
+          if (Math.random() > 0.16) {
+            color = cardPalette[Math.floor(Math.random() * cardPalette.length)]
+          }
+        } else {
+          if (Math.random() > 0.4) {
+            color = bgPalette[Math.floor(Math.random() * bgPalette.length)]
+          }
+        }
+
+        if (color) {
           particles.push({
             x: x + (Math.random() - 0.5) * 2,
             y: y + (Math.random() - 0.5) * 2,
-            vx: (Math.random() - 0.5) * 6 + (Math.random() - 0.5) * 2,
-            vy: -Math.random() * 4.5 - 1.2,
-            size: Math.random() * 4 + 3,
+            size: Math.random() * 1.8 + 2.5,
+            color,
+            vx: (Math.random() - 0.3) * 2.8 + 1.4,
+            vy: -Math.random() * 3.6 - 1.2,
+            gravity: 0.045,
             alpha: 1,
-            decay: Math.random() * 0.02 + 0.012,
-            color: palette[Math.floor(Math.random() * palette.length)],
-            gravity: 0.14
+            decay: 0.0035 + Math.random() * 0.0025,
+            sizeDecay: 0.997,
+            seed: Math.random() * 100
           })
         }
       }
     }
 
-    let animationFrameId
     const startTime = Date.now()
+    let animationFrameId
 
     const render = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      const now = Date.now()
+      const elapsed = now - startTime
+
+      ctx.clearRect(0, 0, width, height)
+
       let aliveCount = 0
 
       for (let i = 0; i < particles.length; i++) {
         const p = particles[i]
-        if (p.alpha > 0.01 && p.size > 0.5) {
-          aliveCount++
-          ctx.save()
-          ctx.globalAlpha = Math.max(0, p.alpha)
-          ctx.fillStyle = p.color
-          ctx.fillRect(p.x, p.y, p.size, p.size)
-          ctx.restore()
 
-          p.x += p.vx
+        if (p.alpha > 0.01) {
+          aliveCount++
+
+          const windTurbulence = Math.sin((elapsed / 320) + p.seed) * 0.7
+          p.x += p.vx + windTurbulence
           p.y += p.vy
           p.vy += p.gravity
           p.alpha -= p.decay
-          p.size *= 0.985
+          p.size *= p.sizeDecay
+
+          ctx.globalAlpha = Math.max(0, p.alpha)
+          ctx.fillStyle = p.color
+          ctx.fillRect(p.x, p.y, p.size, p.size)
         }
       }
 
-      if (aliveCount > 0 && Date.now() - startTime < 1400) {
+      ctx.globalAlpha = 1
+
+      if (aliveCount > 0 && elapsed < 4200) {
         animationFrameId = requestAnimationFrame(render)
       } else {
         finalizeSetup()
@@ -123,213 +160,111 @@ export default function SetupModal({ onComplete, initialDir }) {
   }
 
   return (
-    <div style={{
-      position: 'fixed',
-      inset: 0,
-      zIndex: 999999,
-      backgroundColor: '#140d08',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      overflow: 'hidden'
-    }}>
-      <canvas
-        ref={canvasRef}
-        style={{
-          position: 'absolute',
-          inset: 0,
-          pointerEvents: 'none',
-          zIndex: 10
-        }}
-      />
-
+    <>
       <div
-        ref={cardRef}
+        ref={overlayRef}
+        className="setup-overlay"
         style={{
-          width: '460px',
-          maxWidth: '92%',
-          backgroundColor: '#140d08',
-          border: '1.5px solid rgba(212, 155, 101, 0.28)',
-          borderRadius: '14px',
-          padding: '36px 32px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '26px',
           opacity: isDissolving ? 0 : 1,
-          transition: 'opacity 0.2s ease',
-          zIndex: 5
+          pointerEvents: isDissolving ? 'none' : 'auto'
         }}
       >
-        <div style={{ textAlign: 'center' }}>
-          <h1 style={{
-            fontSize: '1.75rem',
-            fontWeight: 900,
-            color: '#f5eedc',
-            margin: '0 0 6px 0',
-            letterSpacing: '1.5px'
-          }}>
+        <div
+          ref={headerRef}
+          className="setup-top-header"
+        >
+          <h1 className="setup-brand-title">
             DARK OAK
           </h1>
-          <div style={{
-            fontSize: '0.85rem',
-            color: '#d49b65',
-            fontWeight: 700,
-            textTransform: 'uppercase',
-            letterSpacing: '1px'
-          }}>
-            {step === 1
-              ? (language === 'ru' ? 'Выбор языка' : 'Language Selection')
-              : (language === 'ru' ? 'Папка с рецептами' : 'Recipes Directory')}
+
+          <div className="setup-dots">
+            <span className={`setup-dot ${step === 1 ? 'active' : ''}`} />
+            <span className={`setup-dot ${step === 2 ? 'active' : ''}`} />
           </div>
         </div>
 
-        {step === 1 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <button
-                type="button"
-                onClick={() => setLanguage('ru')}
-                style={{
-                  padding: '16px 20px',
-                  borderRadius: '10px',
-                  backgroundColor: language === 'ru' ? 'rgba(212, 155, 101, 0.16)' : 'transparent',
-                  border: language === 'ru' ? '1.5px solid #d49b65' : '1px solid rgba(212, 155, 101, 0.18)',
-                  color: language === 'ru' ? '#ffffff' : '#cbbba8',
-                  fontSize: '1.05rem',
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                  textAlign: 'center',
-                  transition: 'all 0.15s ease'
-                }}
-              >
-                Русский
-              </button>
+        <div
+          ref={cardRef}
+          className="setup-card"
+        >
+          {step === 1 ? (
+            <div className="setup-content">
+              <div className="setup-lang-group">
+                <button
+                  type="button"
+                  className={`setup-lang-btn ${language === 'ru' ? 'active' : ''}`}
+                  onClick={() => setLanguage('ru')}
+                >
+                  Русский
+                </button>
+
+                <button
+                  type="button"
+                  className={`setup-lang-btn ${language === 'en' ? 'active' : ''}`}
+                  onClick={() => setLanguage('en')}
+                >
+                  English
+                </button>
+              </div>
 
               <button
                 type="button"
-                onClick={() => setLanguage('en')}
-                style={{
-                  padding: '16px 20px',
-                  borderRadius: '10px',
-                  backgroundColor: language === 'en' ? 'rgba(212, 155, 101, 0.16)' : 'transparent',
-                  border: language === 'en' ? '1.5px solid #d49b65' : '1px solid rgba(212, 155, 101, 0.18)',
-                  color: language === 'en' ? '#ffffff' : '#cbbba8',
-                  fontSize: '1.05rem',
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                  textAlign: 'center',
-                  transition: 'all 0.15s ease'
-                }}
+                className="setup-action-btn setup-continue-btn"
+                onClick={() => setStep(2)}
               >
-                English
+                {language === 'ru' ? 'Продолжить' : 'Continue'}
               </button>
             </div>
+          ) : (
+            <div className="setup-content">
+              <div className="setup-step-label">
+                {language === 'ru' ? 'Выбор директории для рецептов' : 'Recipes Directory'}
+              </div>
 
-            <button
-              type="button"
-              className="btn-primary"
-              onClick={() => setStep(2)}
-              style={{
-                height: '48px',
-                fontSize: '1rem',
-                fontWeight: 800,
-                justifyContent: 'center',
-                backgroundColor: '#d49b65',
-                color: '#140d08',
-                borderRadius: '8px',
-                border: 'none',
-                cursor: 'pointer',
-                marginTop: '6px'
-              }}
-            >
-              {language === 'ru' ? 'Далее' : 'Next'}
-            </button>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <input
-                type="text"
-                className="form-input"
-                value={recipesDir}
-                onChange={(e) => setRecipesDir(e.target.value)}
-                placeholder="C:\Users\...\Documents\Dark Oak"
-                style={{
-                  height: '44px',
-                  fontSize: '0.85rem',
-                  padding: '0 14px',
-                  backgroundColor: '#1b120a',
-                  border: '1px solid rgba(212, 155, 101, 0.25)',
-                  borderRadius: '8px',
-                  color: '#f5eedc'
-                }}
-              />
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={handleBrowse}
-                disabled={isSelecting}
-                style={{
-                  height: '40px',
-                  fontSize: '0.88rem',
-                  fontWeight: 700,
-                  justifyContent: 'center',
-                  backgroundColor: 'transparent',
-                  border: '1px solid rgba(212, 155, 101, 0.35)',
-                  color: '#d49b65',
-                  borderRadius: '8px',
-                  cursor: 'pointer'
-                }}
-              >
-                {language === 'ru' ? 'Обзор...' : 'Browse...'}
-              </button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <input
+                  type="text"
+                  className="setup-input"
+                  value={recipesDir}
+                  onChange={(e) => setRecipesDir(e.target.value)}
+                  placeholder="C:\Users\...\Documents\Dark Oak"
+                />
+                <button
+                  type="button"
+                  className="setup-secondary-btn"
+                  onClick={handleBrowse}
+                  disabled={isSelecting}
+                >
+                  {language === 'ru' ? 'Обзор...' : 'Browse...'}
+                </button>
+              </div>
+
+              <div className="setup-actions-row">
+                <button
+                  type="button"
+                  className="setup-secondary-btn"
+                  onClick={() => setStep(1)}
+                  style={{ flex: 1 }}
+                >
+                  {language === 'ru' ? 'Назад' : 'Back'}
+                </button>
+
+                <button
+                  type="button"
+                  className="setup-action-btn"
+                  onClick={startTelegramPixelDissolve}
+                  disabled={isDissolving}
+                  style={{ flex: 2 }}
+                >
+                  {language === 'ru' ? 'Начать использование' : 'Start Using'}
+                </button>
+              </div>
             </div>
-
-            <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => setStep(1)}
-                style={{
-                  flex: 1,
-                  height: '48px',
-                  fontSize: '0.95rem',
-                  fontWeight: 700,
-                  justifyContent: 'center',
-                  backgroundColor: 'transparent',
-                  border: '1px solid rgba(212, 155, 101, 0.25)',
-                  color: '#cbbba8',
-                  borderRadius: '8px',
-                  cursor: 'pointer'
-                }}
-              >
-                {language === 'ru' ? 'Назад' : 'Back'}
-              </button>
-
-              <button
-                type="button"
-                className="btn-primary"
-                onClick={startTelegramPixelDissolve}
-                disabled={isDissolving}
-                style={{
-                  flex: 2,
-                  height: '48px',
-                  fontSize: '1rem',
-                  fontWeight: 900,
-                  justifyContent: 'center',
-                  backgroundColor: '#d49b65',
-                  color: '#140d08',
-                  borderRadius: '8px',
-                  border: 'none',
-                  cursor: 'pointer'
-                }}
-              >
-                {language === 'ru' ? 'Начать использование' : 'Start Using'}
-              </button>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
-    </div>
+
+      <canvas ref={canvasRef} className="setup-canvas" />
+    </>
   )
 }

@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import darkOakSaplingImg from '../assets/dark_oak_sapling.png'
 import { useI18n } from '../i18n/I18nContext'
+import { translateCategory } from '../utils/recipeTranslator'
 
 export default function Sidebar({
   currentFilter,
@@ -17,9 +18,10 @@ export default function Sidebar({
   onExport,
   onImport,
   onAddCategory,
-  onDeleteCategory
+  onDeleteCategory,
+  onOpenSetup
 }) {
-  const { t } = useI18n()
+  const { t, language } = useI18n()
   const [categoryToDelete, setCategoryToDelete] = useState(null)
 
   const allCount = recipes.length
@@ -29,7 +31,12 @@ export default function Sidebar({
     <>
       <aside className="sidebar">
         <div className="sidebar-header">
-          <div className="brand">
+          <div
+            className="brand"
+            onClick={onOpenSetup}
+            style={{ cursor: onOpenSetup ? 'pointer' : 'default' }}
+            title={t('sidebar.openSetup')}
+          >
             <div className="brand-icon-wrapper">
               <img src={darkOakSaplingImg} alt="Dark Oak" className="brand-tree-img" />
             </div>
@@ -97,14 +104,14 @@ export default function Sidebar({
                   onClick={() => setCurrentFilter(`cat:${category}`)}
                 >
                   <div className="nav-item-left">
-                    <span>{category}</span>
+                    <span>{translateCategory(category, language) || category}</span>
                   </div>
                   <div className="category-item-right">
                     <span className="nav-badge">{count}</span>
                     {onDeleteCategory && (
                       <button
                         className="category-delete-btn"
-                        title="Удалить категорию"
+                        title={t('sidebar.deleteCategory')}
                         onClick={(e) => {
                           e.stopPropagation()
                           setCategoryToDelete(category)
@@ -154,10 +161,10 @@ export default function Sidebar({
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#ffffff' }}>
-                  Удалить категорию?
+                  {t('sidebar.deleteCatConfirmTitle')}
                 </h3>
                 <p style={{ fontSize: '0.86rem', color: '#a8a29e', lineHeight: 1.45 }}>
-                  Категория «{categoryToDelete}» будет удалена. Рецепты останутся в общем списке.
+                  {t('sidebar.deleteCatConfirmText', { name: categoryToDelete })}
                 </p>
               </div>
             </div>
@@ -173,7 +180,7 @@ export default function Sidebar({
                 }}
                 onClick={() => setCategoryToDelete(null)}
               >
-                Отмена
+                {t('categoryModal.cancelBtn')}
               </button>
               <button
                 type="button"
@@ -192,7 +199,7 @@ export default function Sidebar({
                   setCategoryToDelete(null)
                 }}
               >
-                Удалить
+                {t('view.delete')}
               </button>
             </div>
           </div>

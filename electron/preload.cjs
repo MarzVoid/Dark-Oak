@@ -19,5 +19,7 @@ contextBridge.exposeInMainWorld('cherryApi', {
   importRecipes: () => ipcRenderer.invoke('dialog:import'),
   selectDirectory: () => ipcRenderer.invoke('dialog:selectDirectory'),
   getRecipesDir: () => ipcRenderer.invoke('settings:getRecipesDir'),
-  setRecipesDir: (dir) => ipcRenderer.invoke('settings:setRecipesDir', dir)
+  setRecipesDir: (dir) => ipcRenderer.invoke('settings:setRecipesDir', dir),
+  translateText: (text, targetLang) => ipcRenderer.invoke('translate:text', { text, targetLang }),
+  translateBatch: (texts, targetLang) => ipcRenderer.invoke('translate:batch', { texts, targetLang })
 })

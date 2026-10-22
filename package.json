@@ -1,6 +1,6 @@
 {
   "name": "dark-oak",
-  "version": "0.0.6",
+  "version": "0.0.0",
   "description": "Dark Oak",
   "main": "electron/main.cjs",
   "scripts": {
@@ -26,11 +26,12 @@
     "wait-on": "^9.5.1"
   },
   "dependencies": {
-    "@marzipan/updater": "file:../UpdateModule",
+    "@marzipan/updater": "file:./packages/updater",
     "axios": "^1.7.9",
     "lucide-react": "^1.57.0",
     "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "react-dom": "^19.3.0",
+    "sql.js": "^1.15.1"
   },
   "build": {
     "appId": "com.darkoak.recipes",
@@ -41,7 +42,9 @@
     "files": [
       "dist/**/*",
       "electron/**/*",
+      "packages/updater/dist/**/*",
       "node_modules/@marzipan/updater/dist/**/*",
+      "node_modules/sql.js/**/*",
       "package.json"
     ],
     "win": {

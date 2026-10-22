@@ -70,9 +70,9 @@ export default function RecipeView({
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', overflow: 'hidden' }}>
       <header className="top-bar">
         <div className="top-bar-left">
-          <button type="button" className="btn-secondary" onClick={onBack} title="Назад к рецептам">
+          <button type="button" className="btn-secondary" onClick={onBack} title={t('view.backToRecipes')}>
             <ArrowLeft size={16} />
-            <span>Назад</span>
+            <span>{t('view.back')}</span>
           </button>
           <h1 className="current-view-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             {recipeIcon && <RecipeIconImg icon={recipeIcon} size={24} />}
@@ -138,7 +138,7 @@ export default function RecipeView({
             <div className="recipe-editor-card recipe-editor-card-main">
               <div className="recipe-card-header">
                 <div className="recipe-card-header-left">
-                  <h3 className="recipe-card-title">Основная информация</h3>
+                  <h3 className="recipe-card-title">{t('view.mainInfo')}</h3>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
                   {[1, 2, 3, 4, 5].map((star) => (
@@ -171,7 +171,7 @@ export default function RecipeView({
                   <span className="recipe-view-stat-value">
                     {(Number(recipe.prepTime) || 0) + (Number(recipe.cookTime) || 0)} {language === 'ru' ? 'мин' : 'min'}
                   </span>
-                  <span className="recipe-view-stat-label">{language === 'ru' ? 'Всего' : 'Total'}</span>
+                  <span className="recipe-view-stat-label">{t('view.totalTime')}</span>
                 </div>
                 <div className="recipe-view-stat-card">
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -214,7 +214,7 @@ export default function RecipeView({
               {recipe.description && (
                 <div>
                   <div style={{ fontSize: '0.78rem', color: '#a8927d', marginBottom: '4px', fontWeight: 600 }}>
-                    {language === 'ru' ? 'Описание' : 'Description'}
+                    {t('view.description')}
                   </div>
                   <div className="recipe-view-description">
                     {recipe.description}
@@ -304,7 +304,7 @@ export default function RecipeView({
                       {unsectioned.length > 0 && (
                         <div className="ingredient-section-group">
                           <div className="ingredient-section-header">
-                            <span>Другое</span>
+                            <span>{t('view.otherSection')}</span>
                           </div>
                           <div className="ingredients-list">
                             {unsectioned.map(({ ing, idx }) => {
@@ -359,7 +359,7 @@ export default function RecipeView({
                   >
                     <span className="recipe-view-step-num">{idx + 1}.</span>
                     {stepIcon && (
-                      <div className="recipe-view-step-action-badge" title="Действие">
+                      <div className="recipe-view-step-action-badge" title={t('view.actionTitle')}>
                         <RecipeIconImg icon={stepIcon} size={20} />
                       </div>
                     )}
