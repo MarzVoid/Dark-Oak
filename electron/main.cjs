@@ -29,6 +29,7 @@ function getConfig() {
 function saveConfig(cfg) {
   try {
     const p = getConfigFilePath()
+    fs.mkdirSync(path.dirname(p), { recursive: true })
     fs.writeFileSync(p, JSON.stringify(cfg, null, 2), 'utf-8')
     return true
   } catch (e) {
@@ -211,25 +212,22 @@ ipcMain.handle('settings:setRecipesDir', async (_, newDir) => {
     if (!fs.existsSync(newDir)) {
       fs.mkdirSync(newDir, { recursive: true })
     }
-    const currentFilePath = getRecipesFilePath()
-    const newFilePath = path.join(newDir, 'dark-oak-recipes.json')
-    if (fs.existsSync(currentFilePath) && !fs.existsSync(newFilePath)) {
-      try {
-        fs.copyFileSync(currentFilePath, newFilePath)
-      } catch (e) {
-      }
-    }
-    const currentDbPath = getRecipesDbPath()
-    const newDbPath = path.join(newDir, 'dark-oak-recipes.db')
-    if (fs.existsSync(currentDbPath) && !fs.existsSync(newDbPath)) {
-      try {
-        fs.copyFileSync(currentDbPath, newDbPath)
-      } catch (e) {
-      }
-    }
     const cfg = getConfig()
+    const oldDir = cfg.recipesDir || path.join(app.getPath('documents'), 'Dark Oak')
+    const copied = []
+    for (const name of ['dark-oak-recipes.db', 'dark-oak-recipes.json']) {
+      const source = path.join(oldDir, name)
+      const target = path.join(newDir, name)
+      if (path.resolve(source).toLowerCase() !== path.resolve(target).toLowerCase() && fs.existsSync(source) && !fs.existsSync(target)) {
+        fs.copyFileSync(source, target, fs.constants.COPYFILE_EXCL)
+        copied.push(source)
+      }
+    }
     cfg.recipesDir = newDir
-    saveConfig(cfg)
+    if (!saveConfig(cfg)) throw new Error('Failed to save directory settings')
+    for (const source of copied) {
+      try { fs.unlinkSync(source) } catch (e) {}
+    }
     return { success: true, dir: newDir }
   } catch (err) {
     return { success: false, error: err.message }

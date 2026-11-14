@@ -148,10 +148,19 @@ export default function SetupModal({ onComplete, initialDir }) {
   }
 
   const finalizeSetup = async () => {
+    if (!recipesDir.trim()) {
+      setIsDissolving(false)
+      window.alert(language === 'ru' ? 'Выберите папку для рецептов' : 'Choose a folder for recipes')
+      return
+    }
     if (recipesDir && window.cherryApi && window.cherryApi.setRecipesDir) {
       try {
-        await window.cherryApi.setRecipesDir(recipesDir)
+        const result = await window.cherryApi.setRecipesDir(recipesDir)
+        if (!result?.success) throw new Error(result?.error || 'Failed to save directory')
       } catch (e) {
+        setIsDissolving(false)
+        window.alert(e.message)
+        return
       }
     }
     localStorage.setItem('dark_oak_setup_done', 'true')

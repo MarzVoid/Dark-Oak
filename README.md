@@ -87,3 +87,7 @@ Contributions, issues, and feature requests are very welcome.
 5. Open a Pull Request
 
 Feel free to open an issue in the [Issues](https://github.com/MarzVoid/Dark-Oak/issues) tab if you have suggestions or want to report a bug.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

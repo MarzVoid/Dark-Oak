@@ -1,6 +1,6 @@
 {
   "name": "dark-oak",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Dark Oak",
   "main": "electron/main.cjs",
   "scripts": {
@@ -61,5 +61,8 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": false
     }
+  },
+  "overrides": {
+    "yauzl": "^3.3.1"
   }
 }

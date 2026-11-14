@@ -7,6 +7,7 @@ import RecipeEditorView from './components/RecipeEditorView'
 import AddCategoryModal from './components/AddCategoryModal'
 import SetupModal from './components/SetupModal'
 import { initialRecipes } from './data/initialRecipes'
+import recipepadRecipes from './data/recipepadRecipes.json'
 import { Plus, Utensils } from 'lucide-react'
 import SettingsUpdaterCard from './components/SettingsUpdaterCard'
 import igolochkaBranch from './assets/igolochka.png'
@@ -31,7 +32,8 @@ export default function App() {
   const [loaded, setLoaded] = useState(false)
   const [appVersion, setAppVersion] = useState('')
   const [recipesDir, setRecipesDir] = useState('')
-  const [showSetupModal, setShowSetupModal] = useState(true)
+  const [showSetupModal, setShowSetupModal] = useState(() => localStorage.getItem('dark_oak_setup_done') !== 'true')
+  const [setupDone, setSetupDone] = useState(() => localStorage.getItem('dark_oak_setup_done') === 'true')
 
   useEffect(() => {
     if (window.updater && window.updater.getVersion) {
@@ -86,14 +88,27 @@ export default function App() {
       }
     }
 
-    setRecipes(loadedRecipes || initialRecipes)
-    setCategories(loadedCategories || [])
+    let nextRecipes = loadedRecipes || initialRecipes
+    let nextCategories = loadedCategories || []
+    if (localStorage.getItem('dark_oak_recipepad_imported') !== 'true') {
+      const existingIds = new Set(nextRecipes.map(recipe => recipe.id))
+      nextRecipes = [...nextRecipes, ...recipepadRecipes.filter(recipe => !existingIds.has(recipe.id))]
+      nextCategories = [...new Set([...nextCategories, ...recipepadRecipes.map(recipe => recipe.category)])]
+    }
+    if (localStorage.getItem('dark_oak_pavlova_updated') !== 'true') {
+      const pavlova = recipepadRecipes.find(recipe => recipe.id === '20b92b14-b73f-49fe-963a-9bca4553b8d0')
+      nextRecipes = nextRecipes.map(recipe => recipe.id === pavlova.id
+        ? { ...pavlova, isFavorite: recipe.isFavorite, image: recipe.image || pavlova.image }
+        : recipe)
+    }
+    setRecipes(nextRecipes)
+    setCategories(nextCategories)
     setLoaded(true)
   }
 
   useEffect(() => {
-    loadData()
-  }, [])
+    if (setupDone) loadData()
+  }, [setupDone])
 
   useEffect(() => {
     if (!loaded) return
@@ -102,7 +117,15 @@ export default function App() {
     localStorage.setItem('dark_oak_categories', JSON.stringify(categories))
 
     if (window.cherryApi && window.cherryApi.saveRecipes) {
-      window.cherryApi.saveRecipes({ recipes, categories })
+      window.cherryApi.saveRecipes({ recipes, categories }).then(result => {
+        if (result?.success) {
+          localStorage.setItem('dark_oak_recipepad_imported', 'true')
+          localStorage.setItem('dark_oak_pavlova_updated', 'true')
+        }
+      }).catch(() => {})
+    } else {
+      localStorage.setItem('dark_oak_recipepad_imported', 'true')
+      localStorage.setItem('dark_oak_pavlova_updated', 'true')
     }
   }, [recipes, categories, loaded])
 
@@ -208,12 +231,14 @@ export default function App() {
       try {
         const res = await window.cherryApi.selectDirectory()
         if (res && res.success && res.path) {
-          await window.cherryApi.setRecipesDir(res.path)
+          const result = await window.cherryApi.setRecipesDir(res.path)
+          if (!result?.success) throw new Error(result?.error || 'Failed to save directory')
           setRecipesDir(res.path)
           localStorage.setItem('dark_oak_recipes_dir', res.path)
           loadData()
         }
       } catch (e) {
+        window.alert(e.message)
       }
     }
   }
@@ -222,8 +247,9 @@ export default function App() {
     setShowSetupModal(false)
     if (newDir) {
       setRecipesDir(newDir)
-      loadData()
+      if (setupDone) loadData()
     }
+    setSetupDone(true)
   }
 
   const localizedRecipes = recipes.map(r => getLocalizedRecipe(r, language))
