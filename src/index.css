@@ -1415,12 +1415,14 @@ button {
 
 .recipe-ingredients-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
   gap: 6px;
+  min-width: 0;
 }
 
 .recipe-slot {
   aspect-ratio: 1 / 1.15;
+  min-width: 0;
   background: #170e09;
   border: 1px solid #3c2415;
   border-radius: 6px;
@@ -1467,6 +1469,9 @@ button {
   font-weight: 500;
   line-height: 1.1;
   margin-top: 1px;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  text-align: center;
 }
 
 .recipe-slot-remove {
